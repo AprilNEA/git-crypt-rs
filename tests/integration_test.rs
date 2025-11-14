@@ -25,44 +25,13 @@
 //! cargo test --test integration_test -- --nocapture
 //! ```
 
-use assert_cmd::Command;
+mod common;
+
+use common::{create_git_repo, git_crypt_cmd};
 use predicates::prelude::*;
 use std::fs;
-use std::path::Path;
 use std::process::Command as StdCommand;
 use tempfile::TempDir;
-
-/// Helper to create a git repository
-fn create_git_repo() -> TempDir {
-    let temp = TempDir::new().unwrap();
-
-    // Initialize git repo
-    StdCommand::new("git")
-        .args(["init"])
-        .current_dir(temp.path())
-        .output()
-        .expect("Failed to initialize git repo");
-
-    // Configure git user (required for commits)
-    StdCommand::new("git")
-        .args(["config", "user.email", "test@example.com"])
-        .current_dir(temp.path())
-        .output()
-        .unwrap();
-
-    StdCommand::new("git")
-        .args(["config", "user.name", "Test User"])
-        .current_dir(temp.path())
-        .output()
-        .unwrap();
-
-    temp
-}
-
-/// Helper to get git-crypt command
-fn git_crypt_cmd() -> Command {
-    Command::cargo_bin("git-crypt").unwrap()
-}
 
 #[test]
 fn test_init_command() {

@@ -32,35 +32,12 @@
 //! RUST_BACKTRACE=1 cargo test --test edge_cases_test
 //! ```
 
-use assert_cmd::Command;
+mod common;
+
+use common::{create_git_repo, git_crypt_bin, git_crypt_cmd};
 use std::fs;
 use std::io::Write;
 use std::process::{Command as StdCommand, Stdio};
-use tempfile::TempDir;
-
-fn create_git_repo() -> TempDir {
-    let temp = TempDir::new().unwrap();
-    StdCommand::new("git")
-        .args(["init"])
-        .current_dir(temp.path())
-        .output()
-        .unwrap();
-    StdCommand::new("git")
-        .args(["config", "user.email", "test@example.com"])
-        .current_dir(temp.path())
-        .output()
-        .unwrap();
-    StdCommand::new("git")
-        .args(["config", "user.name", "Test User"])
-        .current_dir(temp.path())
-        .output()
-        .unwrap();
-    temp
-}
-
-fn git_crypt_cmd() -> Command {
-    Command::cargo_bin("git-crypt").unwrap()
-}
 
 #[test]
 fn test_very_large_file_encryption() {
@@ -74,7 +51,7 @@ fn test_very_large_file_encryption() {
     // Create 10MB file
     let large_data = vec![0x42u8; 10 * 1024 * 1024];
 
-    let mut clean = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut clean = StdCommand::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -92,7 +69,7 @@ fn test_very_large_file_encryption() {
     assert!(encrypted.status.success());
 
     // Decrypt back
-    let mut smudge = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut smudge = StdCommand::new(git_crypt_bin())
         .arg("smudge")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -122,7 +99,7 @@ fn test_empty_file_encryption() {
 
     let empty_data = b"";
 
-    let mut clean = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut clean = StdCommand::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -134,7 +111,7 @@ fn test_empty_file_encryption() {
     let encrypted = clean.wait_with_output().unwrap();
     assert!(encrypted.status.success());
 
-    let mut smudge = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut smudge = StdCommand::new(git_crypt_bin())
         .arg("smudge")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -164,7 +141,7 @@ fn test_binary_file_with_null_bytes() {
 
     let binary_data: Vec<u8> = vec![0x00, 0xFF, 0x00, 0x42, 0x00, 0x00, 0xAA, 0xBB];
 
-    let mut clean = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut clean = StdCommand::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -181,7 +158,7 @@ fn test_binary_file_with_null_bytes() {
     let encrypted = clean.wait_with_output().unwrap();
     assert!(encrypted.status.success());
 
-    let mut smudge = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut smudge = StdCommand::new(git_crypt_bin())
         .arg("smudge")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -213,7 +190,7 @@ fn test_unicode_filenames_and_content() {
     let unicode_content = "Hello 世界! Emoji: 🔐🦀 Math: ∑∫∂ "
         .repeat(5); // Repeat to ensure sufficient length
 
-    let mut clean = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut clean = StdCommand::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -230,7 +207,7 @@ fn test_unicode_filenames_and_content() {
     let encrypted = clean.wait_with_output().unwrap();
     assert!(encrypted.status.success());
 
-    let mut smudge = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut smudge = StdCommand::new(git_crypt_bin())
         .arg("smudge")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -264,7 +241,7 @@ fn test_corrupted_encrypted_data() {
     let plaintext = b"Secret message";
 
     // Encrypt
-    let mut clean = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut clean = StdCommand::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -283,7 +260,7 @@ fn test_corrupted_encrypted_data() {
     }
 
     // Try to decrypt corrupted data
-    let mut smudge = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut smudge = StdCommand::new(git_crypt_bin())
         .arg("smudge")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -360,7 +337,7 @@ fn test_concurrent_operations() {
             thread::spawn(move || {
                 let data = format!("Thread {} data", i);
 
-                let mut clean = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+                let mut clean = StdCommand::new(git_crypt_bin())
                     .arg("clean")
                     .current_dir(&path)
                     .stdin(Stdio::piped())
@@ -443,7 +420,7 @@ fn test_special_characters_in_data() {
     // Data with special characters
     let special_data = b"Line1\nLine2\r\nTab\there\0null\x01\x02\x03\xFF";
 
-    let mut clean = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut clean = StdCommand::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -460,7 +437,7 @@ fn test_special_characters_in_data() {
     let encrypted = clean.wait_with_output().unwrap();
     assert!(encrypted.status.success());
 
-    let mut smudge = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut smudge = StdCommand::new(git_crypt_bin())
         .arg("smudge")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -508,7 +485,7 @@ fn test_repeated_key_operations() {
     // Key should still work
     let plaintext = b"Test after repeated operations";
 
-    let mut clean = StdCommand::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut clean = StdCommand::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())

@@ -14,6 +14,10 @@ pub enum GitCryptError {
     #[error("GPG error: {0}")]
     Gpg(String),
 
+    #[cfg(feature = "ssh")]
+    #[error("age/rage error: {0}")]
+    Age(String),
+
     #[error("Repository not initialized. Run 'git-crypt init' first")]
     NotInitialized,
 

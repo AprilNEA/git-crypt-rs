@@ -29,37 +29,14 @@
 //! cargo test --test filter_test
 //! ```
 
-use std::fs;
+mod common;
+
+use common::{create_git_repo, git_crypt_bin};
 use std::io::Write;
 use std::process::{Command, Stdio};
-use tempfile::TempDir;
-
-fn create_git_repo() -> TempDir {
-    let temp = TempDir::new().unwrap();
-
-    Command::new("git")
-        .args(["init"])
-        .current_dir(temp.path())
-        .output()
-        .expect("Failed to initialize git repo");
-
-    Command::new("git")
-        .args(["config", "user.email", "test@example.com"])
-        .current_dir(temp.path())
-        .output()
-        .unwrap();
-
-    Command::new("git")
-        .args(["config", "user.name", "Test User"])
-        .current_dir(temp.path())
-        .output()
-        .unwrap();
-
-    temp
-}
 
 fn init_git_crypt(repo_path: &std::path::Path) {
-    let status = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let status = Command::new(git_crypt_bin())
         .arg("init")
         .current_dir(repo_path)
         .status()
@@ -76,7 +53,7 @@ fn test_clean_filter_encrypts() {
     let plaintext = b"This is secret data";
 
     // Run clean filter
-    let mut child = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut child = Command::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -110,7 +87,7 @@ fn test_smudge_filter_decrypts() {
     let plaintext = b"This is secret data";
 
     // First encrypt with clean filter
-    let mut clean_child = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut clean_child = Command::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -130,7 +107,7 @@ fn test_smudge_filter_decrypts() {
     assert!(clean_output.status.success());
 
     // Now decrypt with smudge filter
-    let mut smudge_child = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut smudge_child = Command::new(git_crypt_bin())
         .arg("smudge")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -170,7 +147,7 @@ fn test_round_trip_encryption() {
 
     for plaintext in test_cases {
         // Encrypt
-        let mut clean = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+        let mut clean = Command::new(git_crypt_bin())
             .arg("clean")
             .current_dir(temp.path())
             .stdin(Stdio::piped())
@@ -183,7 +160,7 @@ fn test_round_trip_encryption() {
         assert!(encrypted.status.success());
 
         // Decrypt
-        let mut smudge = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+        let mut smudge = Command::new(git_crypt_bin())
             .arg("smudge")
             .current_dir(temp.path())
             .stdin(Stdio::piped())
@@ -213,7 +190,7 @@ fn test_diff_filter_shows_encrypted_message() {
     let plaintext = b"Secret data";
 
     // First encrypt
-    let mut clean = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut clean = Command::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -225,7 +202,7 @@ fn test_diff_filter_shows_encrypted_message() {
     let encrypted = clean.wait_with_output().unwrap();
 
     // Run diff filter on encrypted data
-    let mut diff = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut diff = Command::new(git_crypt_bin())
         .arg("diff")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -250,7 +227,7 @@ fn test_diff_filter_shows_encrypted_message() {
 fn test_clean_filter_without_init_fails() {
     let temp = create_git_repo();
 
-    let mut child = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+    let mut child = Command::new(git_crypt_bin())
         .arg("clean")
         .current_dir(temp.path())
         .stdin(Stdio::piped())
@@ -281,7 +258,7 @@ fn test_multiple_encryptions_different_output() {
 
     // Encrypt same data multiple times
     for _ in 0..3 {
-        let mut clean = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+        let mut clean = Command::new(git_crypt_bin())
             .arg("clean")
             .current_dir(temp.path())
             .stdin(Stdio::piped())
@@ -303,7 +280,7 @@ fn test_multiple_encryptions_different_output() {
 
     // But all should decrypt to same plaintext
     for encrypted in &outputs {
-        let mut smudge = Command::new(env!("CARGO_BIN_EXE_git-crypt"))
+        let mut smudge = Command::new(git_crypt_bin())
             .arg("smudge")
             .current_dir(temp.path())
             .stdin(Stdio::piped())

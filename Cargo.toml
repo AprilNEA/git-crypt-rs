@@ -1,6 +1,6 @@
 [package]
 name = "git-crypt"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["AprilNEA"]
 description = "A Rust implementation of git-crypt for transparent encryption of files in a git repository"
@@ -17,8 +17,10 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = []
-gpg = ["pgp"]
+default = ["gpg"]
+gpg = ["dep:pgp"]
+age = ["dep:age"]
+ssh = ["age", "dep:rpassword"]
 
 [dependencies]
 # CLI
@@ -33,6 +35,10 @@ hkdf = "0.12"
 
 # GPG (optional, powered by rPGP)
 pgp = { version = "0.17", optional = true }
+
+# age/rage recipients
+age = { package = "age", version = "0.11.1", default-features = false, features = ["ssh"], optional = true }
+rpassword = { version = "7.3", optional = true }
 
 # Git operations
 git2 = "0.19"

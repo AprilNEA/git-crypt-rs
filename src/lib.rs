@@ -9,6 +9,7 @@
 //! - **Git Filter Integration**: Uses git's clean/smudge filters for seamless operation
 //! - **Key Management**: Export and import symmetric keys for secure sharing
 //! - **GPG Support**: Optional GPG integration for team key distribution
+//! - **SSH/age Sharing**: Optional age/rage integration for sharing keys with SSH recipients
 //! - **Simple CLI**: Easy-to-use command-line interface
 //!
 //! ## Quick Start
@@ -74,6 +75,7 @@
 //! - [`key`] - Key management, storage, export/import
 //! - [`git`] - Git filter integration and repository operations
 //! - [`gpg`] - Optional GPG support for key sharing (requires `gpg` feature)
+//! - [`rage_support`] - Optional age/rage-based SSH key sharing (requires `ssh` feature)
 //! - [`error`] - Error types and unified error handling
 //!
 //! ## Commands
@@ -84,6 +86,8 @@
 //! - `export-key OUTPUT` - Export the symmetric key to a file
 //! - `import-key INPUT` - Import a symmetric key from a file
 //! - `add-gpg-user GPG_ID` - Grant access to a GPG user (requires `gpg` feature)
+//! - `add-ssh-user --ssh-key PATH` - Encrypt the key for an SSH recipient via age/rage (requires `ssh` feature)
+//! - `import-age-key --input FILE --identity SSH_KEY` - Decrypt an age/rage key blob with your SSH key (requires `ssh` feature)
 //! - `status` - Show status of encrypted files (not yet implemented)
 //!
 //! ## Examples
@@ -219,6 +223,20 @@
 //! git-crypt add-gpg-user user@example.com
 //! ```
 //!
+//! ## SSH/age Support (Optional)
+//!
+//! Build with the `ssh` feature (which pulls in the `age` dependency) to share repository keys using SSH recipients via age/rage:
+//!
+//! ```bash
+//! cargo install --git https://github.com/AprilNEA/git-crypt-rs --features ssh
+//!
+//! # Encrypt the repo key for a teammate's SSH public key
+//! git-crypt add-ssh-user --ssh-key ~/.ssh/id_ed25519.pub --alias teammate
+//!
+//! # Teammate imports it with their private key
+//! git-crypt import-age-key --input .git/git-crypt/keys/age/teammate.age --identity ~/.ssh/id_ed25519
+//! ```
+//!
 //! ## Compatibility
 //!
 //! **Not compatible with original git-crypt:**
@@ -312,6 +330,8 @@ pub mod crypto;
 pub mod error;
 pub mod git;
 pub mod gpg;
+#[cfg(feature = "ssh")]
+pub mod rage_support;
 pub mod key;
 
 // Re-export commonly used types
