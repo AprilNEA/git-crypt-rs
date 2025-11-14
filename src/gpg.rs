@@ -1,15 +1,12 @@
 #[cfg(feature = "gpg")]
-use sequoia_openpgp::{
-    cert::CertParser,
-    crypto::SessionKey,
-    parse::Parse,
-    policy::StandardPolicy,
-    serialize::stream::{Armorer, Encryptor, LiteralWriter, Message},
-    Cert, KeyHandle,
+use pgp::{
+    composed::{MessageBuilder, SignedPublicKey, SignedPublicSubKey},
+    crypto::sym::SymmetricKeyAlgorithm,
+    errors::Error as PgpError,
+    packet::{KeyFlags, PublicKey, PublicSubkey},
 };
-
 #[cfg(feature = "gpg")]
-use std::io::{Read, Write};
+use rand::rngs::OsRng;
 
 use crate::crypto::CryptoKey;
 use crate::error::{GitCryptError, Result};
@@ -17,51 +14,33 @@ use crate::error::{GitCryptError, Result};
 pub struct GpgManager;
 
 impl GpgManager {
-    /// Encrypt a key for a GPG recipient
+    /// Encrypt a key for a GPG recipient using rPGP.
     #[cfg(feature = "gpg")]
     pub fn encrypt_key_for_recipient(
         key: &CryptoKey,
         recipient_fingerprint: &str,
     ) -> Result<Vec<u8>> {
-        let p = &StandardPolicy::new();
+        let signed_key = Self::get_public_key_from_keyring(recipient_fingerprint)?;
+        let recipient = select_recipient_key(&signed_key).ok_or_else(|| {
+            GitCryptError::Gpg(format!(
+                "No encryption-capable keys found for recipient: {recipient_fingerprint}"
+            ))
+        })?;
 
-        // Parse recipient certificate (from keyring or file)
-        // This is a simplified version - in practice, you'd need to fetch from keyring
-        let cert = Self::get_cert_from_keyring(recipient_fingerprint)?;
+        let mut rng = OsRng;
+        let mut builder = MessageBuilder::from_bytes("", key.as_bytes().to_vec())
+            .seipd_v1(&mut rng, SymmetricKeyAlgorithm::AES256);
 
-        // Get recipients
-        let recipients = cert
-            .keys()
-            .with_policy(p, None)
-            .supported()
-            .for_transport_encryption()
-            .map(|ka| ka.key())
-            .collect::<Vec<_>>();
-
-        if recipients.is_empty() {
-            return Err(GitCryptError::Gpg(
-                "No encryption-capable keys found for recipient".into(),
-            ));
+        match recipient {
+            RecipientKey::Primary(pk) => builder.encrypt_to_key(&mut rng, pk),
+            RecipientKey::Subkey(subkey) => builder.encrypt_to_key(&mut rng, subkey),
         }
+        .map_err(map_pgp_err)?;
 
-        // Create encrypted message
         let mut encrypted = Vec::new();
-        {
-            let message = Message::new(&mut encrypted);
-            let message = Armorer::new(message).build()
-                .map_err(|e| GitCryptError::Gpg(e.to_string()))?;
-            let message = Encryptor::for_recipients(message, recipients)
-                .build()
-                .map_err(|e| GitCryptError::Gpg(e.to_string()))?;
-            let mut message = LiteralWriter::new(message)
-                .build()
-                .map_err(|e| GitCryptError::Gpg(e.to_string()))?;
-
-            message.write_all(key.as_bytes())
-                .map_err(|e| GitCryptError::Gpg(e.to_string()))?;
-            message.finalize()
-                .map_err(|e| GitCryptError::Gpg(e.to_string()))?;
-        }
+        builder
+            .to_writer(&mut rng, &mut encrypted)
+            .map_err(map_pgp_err)?;
 
         Ok(encrypted)
     }
@@ -79,15 +58,15 @@ impl GpgManager {
 
     /// Decrypt a GPG-encrypted key
     #[cfg(feature = "gpg")]
-    pub fn decrypt_key(encrypted_data: &[u8]) -> Result<CryptoKey> {
+    #[allow(dead_code)]
+    pub fn decrypt_key(_encrypted_data: &[u8]) -> Result<CryptoKey> {
         // This is a placeholder - actual implementation would need:
-        // 1. Access to private key
-        // 2. Proper decryption with sequoia-openpgp
+        // 1. Access to private key material
+        // 2. Proper decryption with rPGP
         // 3. Password handling for encrypted private keys
 
-        // For now, return an error indicating this needs implementation
         Err(GitCryptError::Gpg(
-            "GPG decryption requires private key access - to be implemented".into(),
+            "GPG decryption via rPGP requires private key access - to be implemented".into(),
         ))
     }
 
@@ -99,21 +78,22 @@ impl GpgManager {
         ))
     }
 
-    /// Get a certificate from the keyring
+    /// Get a public key from the keyring
     #[cfg(feature = "gpg")]
-    fn get_cert_from_keyring(fingerprint: &str) -> Result<Cert> {
+    fn get_public_key_from_keyring(fingerprint: &str) -> Result<SignedPublicKey> {
         // This is a placeholder - actual implementation would:
-        // 1. Query the GPG keyring (via sequoia or gpgme)
+        // 1. Query the GPG keyring (via gpg, gpgme, or another interface)
         // 2. Look up by fingerprint or key ID
-        // 3. Return the certificate
+        // 3. Return the signed public key for encryption
 
         Err(GitCryptError::Gpg(
-            format!("Certificate lookup not yet implemented for: {}", fingerprint),
+            format!("Certificate lookup not yet implemented for: {fingerprint}"),
         ))
     }
 
     /// List available GPG keys
     #[cfg(feature = "gpg")]
+    #[allow(dead_code)]
     pub fn list_keys() -> Result<Vec<String>> {
         // Placeholder for listing available GPG keys
         Err(GitCryptError::Gpg("Key listing not yet implemented".into()))
@@ -126,4 +106,38 @@ impl GpgManager {
             "GPG support not enabled. Rebuild with --features gpg".into(),
         ))
     }
+}
+
+#[cfg(feature = "gpg")]
+enum RecipientKey<'a> {
+    Primary(&'a PublicKey),
+    Subkey(&'a PublicSubkey),
+}
+
+#[cfg(feature = "gpg")]
+fn select_recipient_key(signed_key: &SignedPublicKey) -> Option<RecipientKey<'_>> {
+    signed_key
+        .public_subkeys
+        .iter()
+        .find(|subkey| subkey_supports_encryption(subkey))
+        .map(|subkey| RecipientKey::Subkey(&subkey.key))
+        .or_else(|| Some(RecipientKey::Primary(&signed_key.primary_key)))
+}
+
+#[cfg(feature = "gpg")]
+fn subkey_supports_encryption(subkey: &SignedPublicSubKey) -> bool {
+    subkey
+        .signatures
+        .iter()
+        .any(|sig| key_flags_allow_encryption(&sig.key_flags()))
+}
+
+#[cfg(feature = "gpg")]
+fn key_flags_allow_encryption(flags: &KeyFlags) -> bool {
+    flags.encrypt_comms() || flags.encrypt_storage()
+}
+
+#[cfg(feature = "gpg")]
+fn map_pgp_err(err: PgpError) -> GitCryptError {
+    GitCryptError::Gpg(err.to_string())
 }

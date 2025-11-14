@@ -1,6 +1,6 @@
 [package]
 name = "git-crypt"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["AprilNEA"]
 description = "A Rust implementation of git-crypt for transparent encryption of files in a git repository"
@@ -17,8 +17,8 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["gpg"]
-gpg = ["sequoia-openpgp"]
+default = []
+gpg = ["pgp"]
 
 [dependencies]
 # CLI
@@ -31,8 +31,8 @@ sha2 = "0.10"
 hmac = "0.12"
 hkdf = "0.12"
 
-# GPG (optional)
-sequoia-openpgp = { version = "1.21", optional = true }
+# GPG (optional, powered by rPGP)
+pgp = { version = "0.17", optional = true }
 
 # Git operations
 git2 = "0.19"

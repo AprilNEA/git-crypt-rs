@@ -53,6 +53,7 @@ impl GitRepo {
     }
 
     /// Get repository root path
+    #[allow(dead_code)]
     pub fn workdir(&self) -> Result<&Path> {
         self.repo.workdir().ok_or(GitCryptError::Other(
             "Repository has no working directory".into(),

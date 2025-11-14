@@ -1,6 +1,9 @@
 /target
 Cargo.lock
 
+# Auto-generated cargo config (contains machine-specific paths)
+/.cargo/config.toml
+
 # Editor files
 .vscode/
 .idea/
