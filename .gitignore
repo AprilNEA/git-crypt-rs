@@ -1,0 +1,16 @@
+/target
+Cargo.lock
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Test keys
+*.key
+*.bin
