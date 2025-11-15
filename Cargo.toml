@@ -1,6 +1,6 @@
 [package]
 name = "git-crypt"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["AprilNEA"]
 description = "A Rust implementation of git-crypt for transparent encryption of files in a git repository"
@@ -21,6 +21,7 @@ default = ["gpg"]
 gpg = ["dep:pgp"]
 age = ["dep:age"]
 ssh = ["age", "dep:rpassword"]
+sync-s3 = ["dep:s3", "dep:serde", "dep:toml", "dep:config"]
 
 [dependencies]
 # CLI
@@ -39,6 +40,10 @@ pgp = { version = "0.17", optional = true }
 # age/rage recipients
 age = { package = "age", version = "0.11.1", default-features = false, features = ["ssh"], optional = true }
 rpassword = { version = "7.3", optional = true }
+s3 = { package = "rust-s3", version = "0.36", default-features = false, features = ["blocking", "tokio-rustls-tls"], optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+toml = { version = "0.8", optional = true }
+config = { version = "0.14", default-features = false, features = ["toml"], optional = true }
 
 # Git operations
 git2 = "0.19"
@@ -60,3 +65,5 @@ path = "src/main.rs"
 tempfile = "3.13"
 assert_cmd = "2.0"
 predicates = "3.1"
+nanoid = "0.4"
+serial_test = "3.2"

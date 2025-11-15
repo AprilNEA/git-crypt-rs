@@ -5,7 +5,7 @@ mod git;
 mod gpg;
 mod key;
 #[cfg(feature = "ssh")]
-mod rage_support;
+mod rage;
 
 use clap::{Parser, Subcommand};
 use error::Result;
@@ -110,9 +110,7 @@ fn run() -> Result<()> {
         Commands::ExportKey { output } => commands::export_key(&output),
         Commands::ImportKey { input } => commands::import_key(&input),
         #[cfg(feature = "ssh")]
-        Commands::ImportAgeKey { input, identity } => {
-            commands::import_age_key(&input, &identity)
-        }
+        Commands::ImportAgeKey { input, identity } => commands::import_age_key(&input, &identity),
         Commands::Clean => commands::clean(),
         Commands::Smudge => commands::smudge(),
         Commands::Diff => commands::diff(),

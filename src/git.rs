@@ -1,8 +1,8 @@
+use crate::crypto::CryptoKey;
+use crate::error::{GitCryptError, Result};
 use git2::Repository;
 use std::io::{self, Read, Write};
 use std::path::Path;
-use crate::crypto::CryptoKey;
-use crate::error::{GitCryptError, Result};
 
 pub struct GitRepo {
     repo: Repository,
@@ -11,8 +11,7 @@ pub struct GitRepo {
 impl GitRepo {
     /// Open repository at the given path
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let repo = Repository::discover(path)
-            .map_err(|_| GitCryptError::NotInGitRepo)?;
+        let repo = Repository::discover(path).map_err(|_| GitCryptError::NotInGitRepo)?;
         Ok(Self { repo })
     }
 
@@ -105,7 +104,10 @@ pub fn diff_filter() -> Result<()> {
     io::stdin().read_to_end(&mut input)?;
 
     if CryptoKey::is_encrypted(&input) {
-        writeln!(io::stdout(), "*** This file is encrypted with git-crypt ***")?;
+        writeln!(
+            io::stdout(),
+            "*** This file is encrypted with git-crypt ***"
+        )?;
     } else {
         io::stdout().write_all(&input)?;
     }

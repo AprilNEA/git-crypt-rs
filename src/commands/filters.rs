@@ -4,9 +4,8 @@ use crate::key::KeyManager;
 
 /// Clean filter implementation (called by git during add/commit)
 pub fn clean() -> Result<()> {
-    let repo = GitRepo::open(".").map_err(|_| {
-        GitCryptError::Other("Not in a git repository".into())
-    })?;
+    let repo =
+        GitRepo::open(".").map_err(|_| GitCryptError::Other("Not in a git repository".into()))?;
 
     let key_manager = KeyManager::new(repo.git_dir());
 
@@ -20,9 +19,8 @@ pub fn clean() -> Result<()> {
 
 /// Smudge filter implementation (called by git during checkout)
 pub fn smudge() -> Result<()> {
-    let repo = GitRepo::open(".").map_err(|_| {
-        GitCryptError::Other("Not in a git repository".into())
-    })?;
+    let repo =
+        GitRepo::open(".").map_err(|_| GitCryptError::Other("Not in a git repository".into()))?;
 
     let key_manager = KeyManager::new(repo.git_dir());
 

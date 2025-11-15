@@ -39,11 +39,11 @@
 //! - File permissions (Unix)
 //! - Error handling for missing files
 
+use crate::crypto::CryptoKey;
+use crate::error::{GitCryptError, Result};
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use crate::crypto::CryptoKey;
-use crate::error::{GitCryptError, Result};
 
 /// Key storage and management
 pub struct KeyManager {
@@ -213,7 +213,10 @@ mod tests {
         let result = key_manager.init_dirs();
 
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), GitCryptError::AlreadyInitialized));
+        assert!(matches!(
+            result.unwrap_err(),
+            GitCryptError::AlreadyInitialized
+        ));
     }
 
     #[test]

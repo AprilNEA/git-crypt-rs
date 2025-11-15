@@ -86,9 +86,9 @@ impl GpgManager {
         // 2. Look up by fingerprint or key ID
         // 3. Return the signed public key for encryption
 
-        Err(GitCryptError::Gpg(
-            format!("Certificate lookup not yet implemented for: {fingerprint}"),
-        ))
+        Err(GitCryptError::Gpg(format!(
+            "Certificate lookup not yet implemented for: {fingerprint}"
+        )))
     }
 
     /// List available GPG keys

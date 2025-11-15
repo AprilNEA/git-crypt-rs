@@ -42,9 +42,7 @@ fn add_ssh_user_and_import_age_key_round_trip() {
         .success()
         .stdout(predicate::str::contains("Encrypted key saved"));
 
-    let shared_age_key = producer
-        .path()
-        .join(".git/git-crypt/keys/age/alice.age");
+    let shared_age_key = producer.path().join(".git/git-crypt/keys/age/alice.age");
     assert!(shared_age_key.exists());
 
     // Consumer repository imports the key using their SSH identity
@@ -73,10 +71,7 @@ fn add_ssh_user_and_import_age_key_round_trip() {
         .success()
         .stdout(predicate::str::contains("imported successfully"));
 
-    assert!(consumer
-        .path()
-        .join(".git/git-crypt/keys/default")
-        .exists());
+    assert!(consumer.path().join(".git/git-crypt/keys/default").exists());
 }
 
 #[test]

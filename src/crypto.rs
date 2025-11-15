@@ -42,12 +42,12 @@
 //! - Tamper detection on corrupted data
 //! - Invalid key size rejection
 
+use crate::error::{GitCryptError, Result};
 use aes_gcm::{
     aead::{Aead, KeyInit, OsRng},
     Aes256Gcm, Nonce,
 };
 use rand::RngCore;
-use crate::error::{GitCryptError, Result};
 
 pub const KEY_SIZE: usize = 32; // 256 bits
 pub const NONCE_SIZE: usize = 12; // 96 bits for GCM
@@ -116,7 +116,9 @@ impl CryptoKey {
 
         // Check magic header
         if &ciphertext[..MAGIC_HEADER.len()] != MAGIC_HEADER {
-            return Err(GitCryptError::Crypto("Invalid encrypted data format".into()));
+            return Err(GitCryptError::Crypto(
+                "Invalid encrypted data format".into(),
+            ));
         }
 
         let cipher = Aes256Gcm::new_from_slice(&self.key)
@@ -298,10 +300,7 @@ mod tests {
         let ciphertext = key.encrypt(plaintext).unwrap();
         let decrypted = key.decrypt(&ciphertext).unwrap();
         assert_eq!(plaintext, &decrypted[..]);
-        assert_eq!(
-            String::from_utf8(decrypted).unwrap(),
-            "Hello, 世界! 🔐🦀"
-        );
+        assert_eq!(String::from_utf8(decrypted).unwrap(), "Hello, 世界! 🔐🦀");
     }
 
     #[test]

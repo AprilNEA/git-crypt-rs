@@ -4,7 +4,7 @@ use std::path::Path;
 use crate::error::{GitCryptError, Result};
 use crate::git::GitRepo;
 use crate::key::KeyManager;
-use crate::rage_support::RageManager;
+use crate::rage::RageManager;
 
 /// Import an age/rage-encrypted key using an SSH identity.
 pub fn import_age_key(encrypted_path: &Path, identity_path: &Path) -> Result<()> {
@@ -28,8 +28,7 @@ pub fn import_age_key(encrypted_path: &Path, identity_path: &Path) -> Result<()>
         .and_then(|s| s.to_str())
         .unwrap_or("ssh identity");
 
-    let key =
-        RageManager::decrypt_key_with_ssh_identity(&encrypted, &identity, identity_label)?;
+    let key = RageManager::decrypt_key_with_ssh_identity(&encrypted, &identity, identity_label)?;
 
     key_manager.save_key(&key)?;
 

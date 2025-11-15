@@ -3,11 +3,11 @@ use std::io::{Cursor, Read, Write};
 use crate::crypto::CryptoKey;
 use crate::error::{GitCryptError, Result};
 
+use age::secrecy::SecretString;
 use age::{
     ssh::{Identity as SshIdentity, Recipient as SshRecipient},
     Callbacks, DecryptError, Decryptor, EncryptError, Encryptor,
 };
-use age::secrecy::SecretString;
 use rpassword::prompt_password;
 
 pub struct RageManager;
@@ -45,8 +45,7 @@ impl RageManager {
         let identity = SshIdentity::from_buffer(cursor, Some(identity_label.to_string()))
             .map_err(|e| GitCryptError::Age(format!("Invalid SSH identity: {e}")))?;
 
-        let decryptor =
-            Decryptor::new_buffered(Cursor::new(encrypted)).map_err(map_decrypt_err)?;
+        let decryptor = Decryptor::new_buffered(Cursor::new(encrypted)).map_err(map_decrypt_err)?;
         let identity = identity.with_callbacks(PromptCallbacks::new(identity_label));
 
         let mut reader = decryptor

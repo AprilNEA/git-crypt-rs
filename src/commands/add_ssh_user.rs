@@ -6,14 +6,14 @@ use sha2::{Digest, Sha256};
 use crate::error::{GitCryptError, Result};
 use crate::git::GitRepo;
 use crate::key::KeyManager;
-use crate::rage_support::RageManager;
+use crate::rage::RageManager;
+
+#[cfg(feature = "sync-s3")]
+use git_crypt::sync;
 
 /// Add an SSH recipient using age/rage encryption.
 pub fn add_ssh_user(ssh_key_path: &Path, alias: Option<&str>) -> Result<()> {
-    println!(
-        "Adding SSH (age) user from: {}",
-        ssh_key_path.display()
-    );
+    println!("Adding SSH (age) user from: {}", ssh_key_path.display());
 
     let repo = GitRepo::open(".")?;
     let key_manager = KeyManager::new(repo.git_dir());
@@ -38,6 +38,11 @@ pub fn add_ssh_user(ssh_key_path: &Path, alias: Option<&str>) -> Result<()> {
 
     println!("Encrypted key saved to {}", key_file.display());
     println!("Share this file with the SSH user; they can decrypt it with rage/age.");
+
+    #[cfg(feature = "sync-s3")]
+    if let Err(err) = sync::maybe_sync_age_key(repo.git_dir(), &key_file, &name) {
+        eprintln!("Warning: Failed to sync age key to S3: {err}");
+    }
 
     Ok(())
 }

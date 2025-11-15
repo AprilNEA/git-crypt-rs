@@ -75,7 +75,7 @@
 //! - [`key`] - Key management, storage, export/import
 //! - [`git`] - Git filter integration and repository operations
 //! - [`gpg`] - Optional GPG support for key sharing (requires `gpg` feature)
-//! - [`rage_support`] - Optional age/rage-based SSH key sharing (requires `ssh` feature)
+//! - [`rage`] - Optional age/rage-based SSH key sharing (requires `ssh` feature)
 //! - [`error`] - Error types and unified error handling
 //!
 //! ## Commands
@@ -330,9 +330,10 @@ pub mod crypto;
 pub mod error;
 pub mod git;
 pub mod gpg;
-#[cfg(feature = "ssh")]
-pub mod rage_support;
 pub mod key;
+#[cfg(feature = "ssh")]
+pub mod rage;
+pub mod sync;
 
 // Re-export commonly used types
 pub use crypto::CryptoKey;

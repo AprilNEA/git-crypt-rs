@@ -187,8 +187,7 @@ fn test_unicode_filenames_and_content() {
         .success();
 
     // Use content that is less likely to have ASCII-heavy encrypted output
-    let unicode_content = "Hello 世界! Emoji: 🔐🦀 Math: ∑∫∂ "
-        .repeat(5); // Repeat to ensure sufficient length
+    let unicode_content = "Hello 世界! Emoji: 🔐🦀 Math: ∑∫∂ ".repeat(5); // Repeat to ensure sufficient length
 
     let mut clean = StdCommand::new(git_crypt_bin())
         .arg("clean")
@@ -269,7 +268,12 @@ fn test_corrupted_encrypted_data() {
         .spawn()
         .unwrap();
 
-    smudge.stdin.as_mut().unwrap().write_all(&corrupted).unwrap();
+    smudge
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(&corrupted)
+        .unwrap();
     let output = smudge.wait_with_output().unwrap();
 
     // Should fail
@@ -311,10 +315,7 @@ fn test_export_key_to_existing_file() {
 
 #[test]
 fn test_invalid_command() {
-    git_crypt_cmd()
-        .arg("invalid-command")
-        .assert()
-        .failure();
+    git_crypt_cmd().arg("invalid-command").assert().failure();
 }
 
 #[test]

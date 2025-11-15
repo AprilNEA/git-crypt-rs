@@ -80,9 +80,10 @@ fn test_init_outside_git_repo_fails() {
         .current_dir(temp.path())
         .assert()
         .failure()
-        .stderr(predicate::str::contains("not in a git repository").or(
-            predicate::str::contains("Not in a git repository")
-        ));
+        .stderr(
+            predicate::str::contains("not in a git repository")
+                .or(predicate::str::contains("Not in a git repository")),
+        );
 }
 
 #[test]
@@ -257,11 +258,7 @@ fn test_full_workflow_with_encryption() {
 
     // 2. Create .gitattributes
     let gitattributes = temp.path().join(".gitattributes");
-    fs::write(
-        &gitattributes,
-        "*.secret filter=git-crypt diff=git-crypt\n",
-    )
-    .unwrap();
+    fs::write(&gitattributes, "*.secret filter=git-crypt diff=git-crypt\n").unwrap();
 
     // 3. Add and commit .gitattributes
     StdCommand::new("git")

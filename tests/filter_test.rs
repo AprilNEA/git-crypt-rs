@@ -236,12 +236,7 @@ fn test_clean_filter_without_init_fails() {
         .spawn()
         .unwrap();
 
-    child
-        .stdin
-        .as_mut()
-        .unwrap()
-        .write_all(b"data")
-        .unwrap();
+    child.stdin.as_mut().unwrap().write_all(b"data").unwrap();
     let output = child.wait_with_output().unwrap();
 
     // Should fail because not initialized
